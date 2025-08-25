@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:gestion_favor/core/constants/constants.dart' hide FavorStatus;
+import 'package:gestion_favor/core/constants/constants.dart';
 import 'package:gestion_favor/core/services/auth_service.dart';
 import 'package:gestion_favor/core/services/firebase_service.dart';
-import 'package:gestion_favor/data/models/favor.dart';
+import 'package:gestion_favor/data/models/favor.dart' hide FavorStatus;
 import 'package:gestion_favor/presentation/pages/widgets/favor_card.dart';
 import 'package:gestion_favor/presentation/pages/widgets/user_drawer.dart';
 import 'request_favor_screen.dart';
@@ -19,7 +19,7 @@ class _FavorListScreenState extends State<FavorListScreen>
   final AuthService _authService = AuthService();
   
   late TabController _tabController;
-  FavorStatus _currentFilter = FavorStatus.pending;
+  String _currentFilter = FavorStatus.pending;
 
   @override
   void initState() {
@@ -174,7 +174,7 @@ class _FavorListScreenState extends State<FavorListScreen>
 
   Widget _buildFavorsList() {
     return StreamBuilder<List<Favor>>(
-      stream: _firebaseService.getFavorsByStatus(_currentFilter.name),
+      stream: _firebaseService.getFavorsByStatus(_currentFilter),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -286,42 +286,38 @@ class _FavorListScreenState extends State<FavorListScreen>
     );
   }
 
-  IconData _getEmptyStateIcon(FavorStatus status) {
+  IconData _getEmptyStateIcon(String status) {
     switch (status) {
-      case FavorStatus.pending:
-        return Icons.schedule;
-      case FavorStatus.accepted:
-        return Icons.thumb_up;
-      case FavorStatus.completed:
-        return Icons.check_circle;
-      case FavorStatus.refused:
-        return Icons.thumb_down;
+      case FavorStatus.pending: return Icons.schedule;
+      case FavorStatus.accepted: return Icons.thumb_up;
+      case FavorStatus.completed: return Icons.check_circle;
+      case FavorStatus.refused: return Icons.thumb_down;
+      default: return Icons.favorite_border;
     }
   }
 
-  String _getEmptyStateMessage(FavorStatus status) {
+  String _getEmptyStateMessage(String status) {
     switch (status) {
-      case FavorStatus.pending:
-        return 'Aucune faveur en attente';
-      case FavorStatus.accepted:
-        return 'Aucune faveur acceptée';
-      case FavorStatus.completed:
-        return 'Aucune faveur terminée';
-      case FavorStatus.refused:
-        return 'Aucune faveur refusée';
+      case FavorStatus.pending: return 'Aucune faveur en attente';
+      case FavorStatus.accepted: return 'Aucune faveur acceptée';
+      case FavorStatus.completed: return 'Aucune faveur terminée';
+      case FavorStatus.refused: return 'Aucune faveur refusée';
+      default: return AppStrings.noFavors;
     }
   }
 
-  String _getEmptyStateSubMessage(FavorStatus status) {
+  String _getEmptyStateSubMessage(String status) {
     switch (status) {
-      case FavorStatus.pending:
+      case FavorStatus.pending: 
         return 'Vos amis peuvent vous demander des faveurs.\nElles apparaîtront ici.';
-      case FavorStatus.accepted:
+      case FavorStatus.accepted: 
         return 'Les faveurs que vous acceptez\napparaîtront dans cette section.';
-      case FavorStatus.completed:
+      case FavorStatus.completed: 
         return 'Bravo ! Vous n\'avez terminé aucune faveur\npour le moment.';
-      case FavorStatus.refused:
+      case FavorStatus.refused: 
         return 'Les faveurs que vous refusez\napparaîtront ici.';
+      default: 
+        return 'Commencez par demander une faveur à un ami !';
     }
   }
 
