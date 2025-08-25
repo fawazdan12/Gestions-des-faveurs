@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gestion_favor/core/constants/constants.dart' hide FavorStatus;
 import 'package:gestion_favor/data/models/favor.dart';
 import 'package:gestion_favor/data/models/user.dart';
+import 'package:gestion_favor/core/services/notification_service.dart';
 import 'auth_service.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
 
   /// Vérifier si l'utilisateur est connecté, sinon lever une exception
   void _requireAuth() {
@@ -84,7 +86,7 @@ class FirebaseService {
             .toList());
   }
 
-  /// Créer une nouvelle faveur
+  /// Créer une nouvelle faveur avec notification
   Future<void> createFavor({
     required String title,
     required String description,
@@ -125,42 +127,110 @@ class FirebaseService {
       description: description.trim(),
       requesterUid: _currentUserUid,
       targetUid: targetUid,
-      status: FavorStatus.pending, // ✅ Utilisation de l'enum
+      status: FavorStatus.pending,
       createdAt: DateTime.now(),
     );
 
     await _firestore
         .collection(AppConstants.favorsCollection)
         .doc(favorId)
-        .set(favor.toMap()); // toMap() gère la conversion enum -> string
+        .set(favor.toMap());
+
+    // Envoyer une notification au destinataire
+    await _notificationService.sendFavorRequestNotification(
+      recipientUid: targetUid,
+      senderUid: _currentUserUid,
+      favorId: favorId,
+      favorTitle: title,
+    );
   }
 
-  /// Accepter une faveur
+  /// Accepter une faveur avec notification
   Future<void> acceptFavor(String favorId) async {
     _requireAuth();
-    await _updateFavorStatus(favorId, FavorStatus.accepted, {
-      AppConstants.acceptedAtField: Timestamp.now(),
-    });
+    
+    // Récupérer les détails de la faveur pour la notification
+    final favorDoc = await _firestore
+        .collection(AppConstants.favorsCollection)
+        .doc(favorId)
+        .get();
+    
+    if (favorDoc.exists) {
+      final favorData = favorDoc.data()!;
+      final favor = Favor.fromMap(favorData);
+      
+      await _updateFavorStatus(favorId, FavorStatus.accepted, {
+        AppConstants.acceptedAtField: Timestamp.now(),
+      });
+
+      // Envoyer une notification au demandeur
+      await _notificationService.sendFavorAcceptedNotification(
+        recipientUid: favor.requesterUid,
+        senderUid: _currentUserUid,
+        favorId: favorId,
+        favorTitle: favor.title,
+      );
+    }
   }
 
-  /// Refuser une faveur
+  /// Refuser une faveur avec notification
   Future<void> refuseFavor(String favorId) async {
     _requireAuth();
-    await _updateFavorStatus(favorId, FavorStatus.refused);
+    
+    // Récupérer les détails de la faveur pour la notification
+    final favorDoc = await _firestore
+        .collection(AppConstants.favorsCollection)
+        .doc(favorId)
+        .get();
+    
+    if (favorDoc.exists) {
+      final favorData = favorDoc.data()!;
+      final favor = Favor.fromMap(favorData);
+      
+      await _updateFavorStatus(favorId, FavorStatus.refused);
+
+      // Envoyer une notification au demandeur
+      await _notificationService.sendFavorRefusedNotification(
+        recipientUid: favor.requesterUid,
+        senderUid: _currentUserUid,
+        favorId: favorId,
+        favorTitle: favor.title,
+      );
+    }
   }
 
-  /// Marquer une faveur comme terminée
+  /// Marquer une faveur comme terminée avec notification
   Future<void> completeFavor(String favorId) async {
     _requireAuth();
-    await _updateFavorStatus(favorId, FavorStatus.completed, {
-      AppConstants.completedAtField: Timestamp.now(),
-    });
+    
+    // Récupérer les détails de la faveur pour la notification
+    final favorDoc = await _firestore
+        .collection(AppConstants.favorsCollection)
+        .doc(favorId)
+        .get();
+    
+    if (favorDoc.exists) {
+      final favorData = favorDoc.data()!;
+      final favor = Favor.fromMap(favorData);
+      
+      await _updateFavorStatus(favorId, FavorStatus.completed, {
+        AppConstants.completedAtField: Timestamp.now(),
+      });
+
+      // Envoyer une notification au demandeur
+      await _notificationService.sendFavorCompletedNotification(
+        recipientUid: favor.requesterUid,
+        senderUid: _currentUserUid,
+        favorId: favorId,
+        favorTitle: favor.title,
+      );
+    }
   }
 
   /// Mettre à jour le statut d'une faveur
   Future<void> _updateFavorStatus(
     String favorId, 
-    FavorStatus newStatus, // ✅ Paramètre en enum
+    FavorStatus newStatus,
     [Map<String, dynamic>? additionalFields]
   ) async {
     // Vérifier que la faveur existe et appartient à l'utilisateur
@@ -179,7 +249,7 @@ class FirebaseService {
     }
 
     final updateData = <String, dynamic>{
-      AppConstants.statusField: _statusToString(newStatus), // ✅ Conversion enum -> string
+      AppConstants.statusField: _statusToString(newStatus),
       AppConstants.updatedAtField: Timestamp.now(),
     };
 
@@ -193,19 +263,45 @@ class FirebaseService {
         .update(updateData);
   }
 
-  /// Obtenir la liste des amis
+  /// Obtenir la liste des amis réels (avec relation mutuelle)
   Future<List<AppUser>> getFriends() async {
     _requireAuth();
     
-    final snapshot = await _firestore
+    // Récupérer l'utilisateur actuel pour obtenir sa liste d'amis
+    final currentUserDoc = await _firestore
         .collection(AppConstants.usersCollection)
-        .limit(AppConfig.maxFriendsToShow)
+        .doc(_currentUserUid)
         .get();
     
-    return snapshot.docs
-        .map((doc) => AppUser.fromMap(doc.data()))
-        .where((user) => user.id != _currentUserUid)
-        .toList();
+    if (!currentUserDoc.exists) {
+      return [];
+    }
+    
+    final currentUser = AppUser.fromMap(currentUserDoc.data()!);
+    final friendIds = currentUser.friends;
+    
+    if (friendIds.isEmpty) {
+      return [];
+    }
+    
+    // Récupérer les détails des amis par batch
+    List<AppUser> friends = [];
+    
+    // Firestore limite à 10 éléments pour whereIn, donc on traite par batch
+    for (int i = 0; i < friendIds.length; i += 10) {
+      final batch = friendIds.skip(i).take(10).toList();
+      
+      final snapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .where('id', whereIn: batch)
+          .get();
+      
+      friends.addAll(
+        snapshot.docs.map((doc) => AppUser.fromMap(doc.data())).toList()
+      );
+    }
+    
+    return friends;
   }
 
   /// Obtenir les statistiques des faveurs
@@ -216,7 +312,7 @@ class FirebaseService {
       _firestore
           .collection(AppConstants.favorsCollection)
           .where(AppConstants.targetUidField, isEqualTo: _currentUserUid)
-          .where(AppConstants.statusField, isEqualTo: _statusToString(FavorStatus.pending)) // ✅ Conversion
+          .where(AppConstants.statusField, isEqualTo: _statusToString(FavorStatus.pending))
           .get(),
       _firestore
           .collection(AppConstants.favorsCollection)

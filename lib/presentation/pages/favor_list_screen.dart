@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:gestion_favor/core/constants/constants.dart';
 import 'package:gestion_favor/core/services/auth_service.dart';
 import 'package:gestion_favor/core/services/firebase_service.dart';
+import 'package:gestion_favor/core/services/notification_service.dart';
 import 'package:gestion_favor/data/models/favor.dart' hide FavorStatus;
 import 'package:gestion_favor/presentation/pages/widgets/favor_card.dart';
 import 'package:gestion_favor/presentation/pages/widgets/user_drawer.dart';
+import 'package:gestion_favor/presentation/pages/notifications_screen.dart';
+import 'package:gestion_favor/presentation/pages/friends_management_screen.dart';
 import 'request_favor_screen.dart';
 
 class FavorListScreen extends StatefulWidget {
@@ -17,6 +20,7 @@ class _FavorListScreenState extends State<FavorListScreen>
     with SingleTickerProviderStateMixin {
   final FirebaseService _firebaseService = FirebaseService();
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
   
   late TabController _tabController;
   String _currentFilter = FavorStatus.pending;
@@ -36,6 +40,51 @@ class _FavorListScreenState extends State<FavorListScreen>
       appBar: AppBar(
         title: Text('Mes Faveurs'),
         actions: [
+          // Bouton de notifications avec badge
+          StreamBuilder<int>(
+            stream: _notificationService.getUnreadNotificationCount(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.notifications),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => NotificationsScreen()),
+                      );
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 11,
+                      top: 11,
+                      child: Container(
+                        padding: EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: _showLogoutDialog,
