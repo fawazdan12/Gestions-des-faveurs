@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "858456299489",
+    "project_id": "gestion-des-faveurs",
+    "storage_bucket": "gestion-des-faveurs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:858456299489:android:d17d0092f86a3b129c24a0",
+        "android_client_info": {
+          "package_name": "com.example.gestion_favor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPducvSbqaMFWIkQ5tY6JEyCJG9gMPJJE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
