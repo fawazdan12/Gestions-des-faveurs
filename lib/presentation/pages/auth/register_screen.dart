@@ -1,8 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:gestion_favor/core/constants/constants.dart';
 import 'package:gestion_favor/core/services/auth_service.dart';
-
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -16,7 +14,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -34,7 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       // Navigation automatique gérée par AuthWrapper
-      
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -65,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: AppDimensions.spaceLarge),
-                  
+
                   // Titre
                   Icon(
                     Icons.person_add,
@@ -92,7 +89,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       labelText: 'Nom complet',
                       prefixIcon: Icon(Icons.person),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
                       ),
                     ),
                     textCapitalization: TextCapitalization.words,
@@ -115,7 +114,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
                       ),
                     ),
                     keyboardType: TextInputType.emailAddress,
@@ -138,11 +139,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       labelText: 'Mot de passe',
                       prefixIcon: Icon(Icons.lock),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
                       ),
                     ),
                     obscureText: _obscurePassword,
@@ -165,11 +174,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       labelText: 'Confirmer le mot de passe',
                       prefixIcon: Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        ),
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
                       ),
                     ),
                     obscureText: _obscureConfirmPassword,
@@ -190,14 +208,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
-                      padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+                      padding: EdgeInsets.symmetric(
+                        vertical: AppDimensions.paddingMedium,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
                       ),
                     ),
-                    child: _isLoading 
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text('S\'inscrire', style: AppTextStyles.buttonText),
+                    child: _isLoading
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text('S\'inscrire', style: AppTextStyles.buttonText),
                   ),
                   SizedBox(height: AppDimensions.spaceMedium),
 
@@ -208,12 +230,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                     child: Text('Déjà un compte ? Se connecter'),
                   ),
-                  
+
                   SizedBox(height: AppDimensions.spaceLarge),
-                  
+
                   // Conditions d'utilisation
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.paddingMedium,
+                    ),
                     child: Text(
                       'En créant un compte, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité.',
                       style: AppTextStyles.caption,
